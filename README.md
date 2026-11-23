@@ -44,33 +44,8 @@ flowchart TD
     App --> OTel["OpenTelemetry Spans + PII-Scrubbed JSON Logs (Intent vs. Outcome)"]
 ```
 
----
 
-## AgentOps Code Review Matrix (95/95 Alignment)
 
-| Category | Criterion (5 pts each) | Concrete Implementation in This Repo |
-|---|---|---|
-| **1. Tool & Interface Design** | Comprehensive Tool Docstrings | Full Google-style docstrings with purpose, args, and return contracts in `mystery_engine/tools/case_tools.py`, `mystery_engine/tools/mcp_forensics.py`, `mystery_engine/mcp_server/forensics_server.py`. |
-| | Descriptive Naming | Domain-specific names: `start_new_case`, `inspect_clue`, `record_interrogation_note`, `list_case_status`, `submit_accusation`, `exit_refinement_loop`, `analyze_fingerprint`, `verify_alibi_timeline`, `decode_cipher_note`. |
-| | Explicit JSON Schemas | Strict Pydantic input/output models (`StartCaseInput`, `InspectClueInput`, `ClueInspectionOutput`, `InterrogationNoteInput`, `AccusationInput`, `AccusationResult`, `CaseDossier`) + LLM `output_schema=LoreCritiqueReport` on `LoreCriticAgent` (`mystery_engine/schemas.py`). |
-| | Guided Error Handling | Every tool & callback error returns structured `{"status": "error", "message": ..., "recovery_action": ...}` telling the LLM exactly how to recover. |
-| **2. Context & Memory** | Robust System Instructions | Structured 4-section **Agent Constitution** (`MYSTERY_DIRECTOR_CONSTITUTION`) in `mystery_engine/agents/director.py` + role/protocol/constraint prompts on all specialists. |
-| | History Compaction | ADK `EventsCompactionConfig(compaction_interval=4, overlap_size=1)` on `App` (`mystery_engine/agent.py`). |
-| | Persistent Session State | `SqliteSessionService` backed by SQLite (`data/sessions/mystery_sessions.db`) with `session`, `user:`, and `temp:` scopes + `VertexAiMemoryBankService` cloud support (`mystery_engine/memory/services.py`). |
-| | Async Memory Operations | Non-blocking background `asyncio.create_task` memory consolidation (`schedule_background_memory_consolidation`) dispatched by `auto_save_memory_callback` so UI turns never block. |
-| **3. Orchestration & Logic** | Multi-Agent Patterns | Coordinator (`MysteryDirector`) + `SequentialAgent` (`CaseForgePipeline`) → `ParallelAgent` (`WorldBuilderParallel`) + `LoopAgent` (`ConsistencyRefinementLoop`) + 3 specialists + A2A (`to_a2a`). |
-| | Strategic Model Routing | `select_model_for_role()` (`mystery_engine/agents/model_router.py`) routes fast interactive tasks to `MYSTERY_FAST_MODEL` (`gemini-3.5-flash`) and complex worldbuilding/critique to `MYSTERY_PLANNING_MODEL` (`gemini-3.8-flash`). |
-| | Guardrails & Policy Plugins | Input prompt-injection blocker (`before_model_callback`), output spoiler self-eval check (`after_model_callback`), tool validation (`before_tool_callback`), plus ADK `BasePlugin` (`mystery_engine/callbacks/guardrails.py`). |
-| | Human-in-the-Loop Hooks | High-stakes formal arrest tool `submit_accusation` invokes ADK `tool_context.request_confirmation(...)` and pauses (`status="pending_confirmation"`) until explicit human detective approval (`mystery_engine/tools/case_tools.py`). |
-| **4. Observability & Tracing** | Structured JSON Logging | Single-line JSON log formatter (`JsonLogFormatter`) with ISO timestamps, trace/span IDs, and structured metadata (`mystery_engine/observability/logging_config.py`). |
-| | Intent vs. Outcome Capture | `MysteryObservabilityPlugin` explicitly records `tool_intent` before execution and pairs it with `tool_intent_vs_outcome` (`intent_succeeded`, `outcome_status`, `latency_ms`) after execution (`mystery_engine/observability/plugin.py`). |
-| | Distributed Tracing | OpenTelemetry `TracerProvider` (OTLP/Jaeger, Console, Google Cloud Trace) with linked parent/child agent and tool execution spans (`mystery_engine/observability/telemetry.py`). |
-| | PII Redaction | Active PII scrubber (`mystery_engine/observability/pii_redaction.py`) supporting Google Cloud DLP API (`ENABLE_CLOUD_DLP=true`) plus always-on regex scrubbing wired into **both** JSON logging and long-term memory pipelines. |
-| **5. Infrastructure & CI/CD** | Automated Evaluation Suites | ADK golden eval dataset (`evals/mystery_engine.evalset.json`, `evals/test_config.json`) validated offline against ADK `EvalSet` schema + live `AgentEvaluator` tests (`tests/test_evals.py`). |
-| | Infrastructure as Code & ADK CLI | Production Terraform IaC (`infra/terraform/main.tf`, `variables.tf`, `outputs.tf`), multi-stage `Dockerfile`, `docker-compose.yml`, GitHub Actions CI (`.github/workflows/ci.yml`), and ADK CLI usage documented below. |
-| | Secure Secret Management | Zero hardcoded keys; `.env` gitignored; runtime Secret Manager client (`mystery_engine/secrets.py`), Terraform `secret_key_ref`, and Cloud Run `--set-secrets`. |
-
----
 
 ## Quickstart & ADK CLI Usage
 
