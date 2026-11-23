@@ -1,0 +1,6 @@
+project_id      = "your-gcp-project-id"
+region          = "us-central1"
+service_name    = "mystery-engine-adk"
+container_image = "us-central1-docker.pkg.dev/your-gcp-project-id/mystery-engine-adk-images/mystery-engine:latest"
+fast_model      = "gemini-3.5-flash"
+planning_model  = "gemini-3.8-flash"

@@ -1,0 +1,151 @@
+{
+  "eval_set_id": "mystery_engine_core_regression",
+  "name": "Mystery Engine Core Tool & Orchestration EvalSet",
+  "description": "Validates case initialization, clue inspection, and status tracking trajectories in Google ADK.",
+  "eval_cases": [
+    {
+      "eval_id": "start_noir_mystery",
+      "session_input": {
+        "app_name": "mystery_engine",
+        "user_id": "eval_detective",
+        "state": {}
+      },
+      "conversation": [
+        {
+          "invocation_id": "inv-start-noir-001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "Start a new noir mystery case for me."
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "start_new_case",
+                "args": {
+                  "theme": "noir"
+                }
+              }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Welcome to The Midnight Horologist. Julian Ashworth collapsed inside his clockwork vault at 21:30 and the Eclipse Chronometer is missing. Your suspects are Clara Vance, Marcus Sterling, and Dr. Elena Rostova. Available clues include clue_1, clue_2, clue_3, and clue_4."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "check_case_status_initial",
+      "session_input": {
+        "app_name": "mystery_engine",
+        "user_id": "eval_detective",
+        "state": {}
+      },
+      "conversation": [
+        {
+          "invocation_id": "inv-status-001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "Check my current case status and detective rank."
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "list_case_status",
+                "args": {}
+              }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "You do not have an active case yet. Your current rank is Rookie Investigator with 0 cases solved."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "start_and_inspect_clue_1",
+      "session_input": {
+        "app_name": "mystery_engine",
+        "user_id": "eval_detective",
+        "state": {}
+      },
+      "conversation": [
+        {
+          "invocation_id": "inv-multi-001",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "Start a noir mystery."
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "start_new_case",
+                "args": {
+                  "theme": "noir"
+                }
+              }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Case initialized: The Midnight Horologist. Suspects are Clara Vance, Marcus Sterling, and Dr. Elena Rostova."
+              }
+            ]
+          }
+        },
+        {
+          "invocation_id": "inv-multi-002",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              {
+                "text": "Inspect clue_1 in the forensics lab."
+              }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "inspect_clue",
+                "args": {
+                  "clue_id": "clue_1"
+                }
+              }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              {
+                "text": "Clue 1 is the Shattered Pocket Watch frozen at 21:32. Forensic analysis reveals watchmaker oil and fingerprint sample FP-STERLING-209 on the interior latch."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

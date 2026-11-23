@@ -1,0 +1,115 @@
+name: CI — Mystery Engine ADK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint, Unit & Integration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --python ${{ matrix.python-version }} --extra dev --extra a2a
+
+      - name: Lint with Ruff
+        run: uv run ruff check .
+
+      - name: Verify offline health check & demo walkthrough
+        env:
+          SESSION_BACKEND: memory
+          ENABLE_MCP_FORENSICS: "false"
+        run: |
+          uv run python main.py --health
+          uv run python main.py --demo
+
+      - name: Run unit, HITL, PII redaction, MCP, observability & eval schema tests
+        env:
+          SESSION_BACKEND: memory
+          OTEL_EXPORTER: none
+          ENABLE_MCP_FORENSICS: "false"
+        run: uv run pytest -v --tb=short
+
+  terraform-validate:
+    name: Validate Terraform IaC
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format Check
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init & Validate
+        working-directory: infra/terraform
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+  live-adk-eval:
+    name: Live ADK AgentEvaluator Suite
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: ${{ secrets.GOOGLE_API_KEY != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install eval dependencies
+        run: uv sync --python 3.12 --extra dev --extra eval
+
+      - name: Run ADK AgentEvaluator golden evalset
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          RUN_LIVE_EVALS: "1"
+          SESSION_BACKEND: memory
+          OTEL_EXPORTER: none
+          ENABLE_MCP_FORENSICS: "false"
+        run: uv run pytest tests/test_evals.py -v -m eval
+
+  docker-build:
+    name: Validate Container Build
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: mystery-engine-adk:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

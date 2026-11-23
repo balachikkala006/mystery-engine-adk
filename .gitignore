@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+
+# Terraform local state & variable files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Local runtime state & databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/sessions/
+.adk/
+
+# Testing & tooling
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# OS & Editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
