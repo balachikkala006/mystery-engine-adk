@@ -74,7 +74,6 @@ jobs:
     name: Live ADK AgentEvaluator Suite
     runs-on: ubuntu-latest
     needs: lint-and-test
-    if: ${{ secrets.GOOGLE_API_KEY != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -82,17 +81,20 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Install eval dependencies
-        run: uv sync --python 3.12 --extra dev --extra eval
-
-      - name: Run ADK AgentEvaluator golden evalset
+      - name: Run ADK AgentEvaluator golden evalset (when GOOGLE_API_KEY secret is configured)
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           RUN_LIVE_EVALS: "1"
           SESSION_BACKEND: memory
           OTEL_EXPORTER: none
           ENABLE_MCP_FORENSICS: "false"
-        run: uv run pytest tests/test_evals.py -v -m eval
+        run: |
+          if [ -z "$GOOGLE_API_KEY" ]; then
+            echo "GOOGLE_API_KEY repository secret not configured; skipping live LLM evals."
+            exit 0
+          fi
+          uv sync --python 3.12 --extra dev --extra eval
+          uv run pytest tests/test_evals.py -v -m eval
 
   docker-build:
     name: Validate Container Build
